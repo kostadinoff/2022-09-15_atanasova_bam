@@ -1,0 +1,550 @@
+---
+title: "OMICRON – УСПОКОЕНИЕ ИЛИ ПРЕДИЗВИКАТЕЛСТВО?"
+author: "Анализ на данни"
+date: "`r Sys.Date()`"
+format:
+    pdf: 
+        mainfont: "Cormorant Infant"
+        sansfont: "Cormorant Infant"
+        monofont: "Cormorant Infant"
+        include-in-header: 
+          text: |
+                 \usepackage[bulgarian]{babel}
+    html: 
+      self-contained: true
+reference-location: margin
+citation-location: margin
+---
+
+```{r}
+#| include: false
+#| warning: false
+library(ggthemes)
+library(tidyverse)
+library(lubridate)
+library(patchwork)
+library(gtsummary)
+library(easystats)
+library(flextable)
+library(scales)
+library(rstatix)
+library(sysfonts)
+library(tidyquant)
+library(showtext)
+library(statsExpressions)
+library(ggridges)
+library(gt)
+library(flextable)
+library(ggsci)
+library(viridis)
+library(emmeans)
+library(survival)
+library(survminer)
+library(marginaleffects)
+
+knitr::opts_chunk$set(dev = "cairo_pdf")
+#setwd("~/MEGA/MEGAsync/2022-09-15_atanasova_bam")
+setwd("~/MEGAsync/2022-09-15_atanasova_bam")
+ggplot2::theme_set(ggthemes::theme_tufte(base_size = 14, base_family = "Cormorant Infant", ticks =FALSE))
+dat = read_rds("dat.rds")
+dat_all = read_rds("all_patients.rds")
+
+round_df <- function(x, digits) {
+  # round all numeric variables
+  # x: data frame 
+  # digits: number of digits to round
+  numeric_columns <- sapply(x, mode) == 'numeric'
+  x[numeric_columns] <-  round(x[numeric_columns], digits)
+  x
+}
+
+```
+
+За периода 1.7.2021-9.5.2022г. в Лабораторията по Вирусология при УМБАЛ „Св. Георги“-Пловдив чрез RT-PCR (Bioneer) е установен SARS-CoV-2 при 3868 пациенти. На 5% от тях са изпратени проби в НЦЗПБ-София за определяне вирусния вариант
+чрез секвениране (Pangolin COVID-19 Lineage Assigner v4.0.6), който е уточнен при 190 проби.
+
+# Динамика в периода на изследване
+## Динамика в хоспитализацията и вътреболничния леталитет 
+
+С най-много починали се отличава седмица 45-та на 2021 г. (м. Ноември), в която са регистрирани 66 починали лица или средно по 9 на ден. Само в две от анализирираните седмици не са регистрирани смъртни случай - 29 седмица на 2021 г. (м. Юли) и 18 седмица на 2022 г. (м. Април) 	
+
+Най-висок брой на хоспитализирани лица се наблюдава в 43-та седмица на м. Октомври - 174 или средно по 25 хоспитализации дневно. Без хоспитализации са и посочените 45-та седмица в месец Ноември и 18-та в месец Април, където освен смъртни случай не са регистрирани и хоспитализирани пациенти. 
+
+```{r}
+#| label: dinamics
+#| fig-cap: "По хоризонтала - времето (седмици), с черна линия - 14- дневен среден брой (moving averages) на хоспитализираните случаи, с червена линия - 14- дневен среден брой (moving averages) на починалите, със синя линия- болничния леталитет на седмична база"
+#| warning: false
+#| echo: false
+#| column: page-right
+
+# скалиращ фактор за наличие на две у оси
+scaleFactor <- 25 / 76.47059
+# подготовка на данни
+dat_all %>% 
+  count(admit_day, outocome) %>% 
+  pivot_wider(names_from = outocome, values_from = n) %>% 
+  select(-`NA`) %>% 
+  mutate(total = `За домашно лечение` + `Починал`,
+         across(where(is.numeric), ~replace(., is.na(.), 0))) %>% 
+  rename(deaths = `Починал`) %>% 
+  select(- `За домашно лечение`) %>%
+# хитра функция с групиране по седмици и месеци и нова колона от средните 
+  group_by(yw = paste(year(admit_day), week(admit_day))) %>% 
+  mutate(case_fatality = mean(deaths/mean(total))*100) %>% 
+  ungroup() %>%
+# Плот
+  ggplot(aes(x = admit_day, group = 1))+
+# За Хоспитализирани
+  geom_line(aes(y=total, group = 1), 
+          alpha = 0.3, size = 0.3, lty = 2, color = "black") +
+  geom_ma(aes(y=total, group = 1), ma_fun = SMA, n = 14,  
+          alpha = 1, size = 0.8, lty = 1, color = "black") +           
+  geom_point(aes(y = total, group = 1),
+             alpha = 0.3, size = 0.4, color = "black") +
+# За Починали  
+  geom_line(aes(y = deaths, group = 1),
+          size = 0.3, alpha = 0.3, colour = "red", lty=2) +
+  geom_ma(aes(y = deaths, group = 1), ma_fun = SMA, n = 14, 
+          size = 0.8, alpha = 1, colour = "red",lty=1) +
+  geom_point(aes(y = deaths, group = 1),
+             alpha = 0.3, size = 0.3, colour = "red") +
+# За Леталитета 
+  geom_smooth(aes(y = case_fatality*scaleFactor, group = 1),
+              se = F, colour = "blue",lty=2, size = 1) +
+# За двете оси
+  scale_y_continuous(name="Брой (n)", 
+                     sec.axis=sec_axis(~./scaleFactor, name="Леталитет (%)")) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+# Ръгчетата по х оста 
+  ggthemes::geom_rangeframe(aes(x = admit_day, group = 1)) +
+  coord_cartesian(clip="off") +
+  geom_rug(aes(x = admit_day),alpha = 0.3, size = 0.3 ,sides="b")+
+  scale_x_date(date_labels="%b %y",date_breaks  ="1 month")+
+  labs(title = "Динамика в броя хоспитализациите,смъртните случаи и леталитета",
+       x = "")
+```
+
+По отношение на леталитета, с най-висока стойност се установява за месец ноември 2021г. (37%). Най-ниската му стойност се установява за месец април 2022 г. (14%). За месеците август-октовмри и декември 2021 г., както и за февруари 2022 г. вътреболничния леталитет превишава средните стойности за целия период. 
+```{r}
+#| include: false
+
+fill_dat = dat %>% 
+  freq_table(my,variant_type) %>% 
+  select(-n) %>% 
+  pivot_wider(names_from = variant_type, values_from = prop) %>%  
+  select(my, Delta) %>% 
+  mutate(Delta = replace_na(Delta,0)) %>% 
+  rename(delta_prob = Delta) 
+  
+  
+  
+
+```
+
+
+```{r}
+#| label: case_fatality
+#| fig-cap: "Разпределение на леталитета по месеци и спрямо разпространението на делта ваиранта. Вътреболничния леталитет е изчислен като са разделени броя на починалите към броя на хоспитализираните в съответния месец. Леталитетът е представен в проценти. В случая става върпрос за *crude* или нестандартиризиран леталитет"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+
+dat_all %>% 
+  count(my, outocome) %>% 
+  pivot_wider(names_from = outocome, values_from = n) %>% 
+  select(-`NA`) %>% 
+  mutate(total = `За домашно лечение` + `Починал`,
+         across(where(is.numeric), ~replace(., is.na(.), 0))) %>% 
+  rename(deaths = `Починал`) %>% 
+  select(- `За домашно лечение`) %>% 
+  mutate(case_fatality = (deaths/total),
+         across(where(is.numeric), ~replace(., is.na(.), 0))) %>% 
+  left_join(fill_dat) %>% 
+  ggplot(aes(case_fatality,my,fill = delta_prob)) +
+  geom_col()+
+  scale_fill_gradient(low = "#008F7A", high = "#845EC2", na.value = NA)+
+  geom_vline(xintercept = 0.253, lty=2, size = 0.8, alpha = 1.1)+
+  scale_x_continuous(labels = scales::percent)+
+
+  #ggthemes::geom_rangeframe() +
+  #geom_rug(alpha = 0.6,sides="r")+
+  labs(title = "Разпределние на вътреболничния леталитет по месеци",
+       x = "Вътреболничен леталитет",
+       y = "",
+       fill = "% Делта вариант")
+
+```
+
+Разглеждайки промяна в индекса на леталитета с най-голяма динамика се отличава месец август 2021г. През този период в лечебното заведение са постъпили с 108 пациента повече спрямо предходния месец Юли. Подобна динамика се наблюдава и за смъртността, като през месец Август са починали с 340 повече пациенти. Позитивна динамика се установява и в месеците
+септември-ноември 2021г., както и януари-февруари 2022г. Тези позитивни отклонения в индекса свидетелсват за наличието на "вълна" с повишена нужда от хоспитализация и повишен леталитет.  
+
+
+```{r}
+#| include: false
+delta_rate = dat %>% 
+  freq_table(my,variant_type) %>% 
+  select(-prop) %>% 
+  pivot_wider(names_from = variant_type, values_from = n) %>%  
+  select(my, Delta) %>% 
+  mutate(Delta = replace_na(Delta,0),
+         delta_rate= (Delta-lag(Delta))/lag(Delta)) %>% 
+  select(-Delta)
+  
+```
+
+```{r}
+#| label: case_fatality_dynamics
+#| fig-cap: "Верижния индекс на болничния леталитет е конструиран, като за всеки месец е изчислена разликата в броя на починалите спрямо предходния, разделяна на броя на хоспитализираните в предходния месец"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+
+dat_all %>% 
+  count(my, outocome) %>% 
+  pivot_wider(names_from = outocome, values_from = n) %>% 
+  select(-`NA`) %>% 
+  mutate(total = `За домашно лечение` + `Починал`,
+         across(where(is.numeric), ~replace(., is.na(.), 0))) %>% 
+  rename(deaths = `Починал`) %>% 
+  select(- `За домашно лечение`) %>% 
+  mutate(rate = (deaths-lag(deaths))/lag(total),
+         my = as_factor(my)) %>% 
+  ggplot(aes(rate, my)) +
+  geom_col()+
+  geom_vline(xintercept = 0, lty=1, size = 1,1, alpha = 1.1)+
+  scale_x_continuous(labels = scales::percent)+
+  #ggthemes::geom_rangeframe() +
+  coord_cartesian(clip="off") +
+  #geom_rug(alpha = 0.6,sides="r")+
+  labs(title = "Индекс болничния леталитет",
+       x = "Индекс (%)",
+       y = "")
+
+```
+
+
+Наблюдава се позитивна, слаба, но статистически значима връзка между времето за хоспитализация (отчетена в дни) и възрастта на пациентите. 
+
+```{r}
+#| include: false
+results_data = corr_test(dat_all,days_hospital, age, type = "parametric") 
+```
+
+Една година повишени във възраста се свързва с 0,52 дни увеличение в болничния престой. Следва се отбележи, че възрастта е сигнификатен, но слаб предиктор, обясняващ едва 2,8% от вариацията в продължителността на хоспитализация. 
+
+```{r}
+#| label: lengh_of_stay
+#| fig-cap: "Скатър плот - разпределение на пациентите по възраст и продължителност на хоспитализацията"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+
+dat_all %>% 
+  ggplot(aes(age,days_hospital))+
+    geom_jitter(size = 0.3, aplha = 0.8,color = "gray") +
+    geom_rug(alpha = 0.2,size = 0.1, position = "jitter")+
+    geom_smooth(method = lm, lty = 1, size = 1, color = "black", alpha =1.5, se = FALSE)+
+    labs(title = "Връзка между възрастта на пациентите и времето за хоспитализация",
+         subtitle = parse(text = results_data$expression),
+        x = "Възраст",
+        y = "Период на хоспитализация")
+```
+
+## Динамика във вирусните варианти
+
+В изследвания период 112 (58.9%) от пробите са с идентифициран вариант делта. Само в групата с делта вариант, най-често предстъавен е  Delta (В.1.617.2) n = 66 (58.9%). Втори по честота е Omicron с 70 позитивни проби (36.8%). В тази група най-често срещания е Omicron (BA.1/BA.1.1) n = 46 (65.7%). С най-малка честота са пробите с идентифициран Alpha вариант (n= 8; 4.2%). Следва се отбележи, че от началото на изследвания период домира делта варианта, като в 27 седмица на 2021 (м. Юли), той е преобладаващ в 66,7% от всички проби. Тази тенденция се задържа до 2 седмица на 2022г. (м. Януари), когато се наблюдава заместване с преобладаващият до края на изследването Омикрон вариант. 
+
+```{r}
+#| label: variant_dinamics
+#| fig-cap: "Динамика на вариантите по седмица"
+#| column: page-right
+#| warning: false
+#| echo: false
+dat %>% 
+  count(variant_type,wmy) %>% 
+  na.omit() %>% 
+  ggplot(aes(n,wmy, fill = variant_type)) +
+  geom_col()+
+  facet_wrap(~variant_type)+
+  theme(legend.position="none")+
+  scale_fill_nejm()+
+  labs(title = "Динамика на вариантите по седмица ",
+        x = "Брой проби",
+        y = "")
+  
+```
+
+# Анализ на клинико-биологичните фактори и вирусния вариант
+
+## Възраст
+
+По отнощение на възрастта се набюдават несигнификатни различия между основните вирусни варианти. За Delta средната вързраст е най-малка - 57,9 г. (95% CI 53.7- 62.1), а най-висока се установява за пациентите с вариант Алфа - 67.2 г.  (95% CI 50.3- 84.1). 
+
+```{r}
+#| include: false
+mod <- lm(age ~ variant_type, data = dat)
+variant_age <- 
+  dat %>% 
+  filter(variant_type != "Alpha") %>% 
+  two_sample_test(
+  variant_type,
+  age,
+  paired = FALSE,
+  type = "np")
+
+```
+
+```{r}
+#| tbl-cap: "Разлика във възрастта на пациентите по варианти"
+#| column: margin
+#| echo: false
+#| warning: false
+ dat %>%    
+  emmeans_test(age ~ variant_type) %>% 
+  as_tibble() %>% 
+  select(group1,group2,statistic,p.adj) %>% 
+  rename(`Вариант ` =  group1,
+         `Вариант` = group2,
+         `Разлика` = statistic,
+         `p` = p.adj) %>% 
+  round_df(2) %>% 
+  gt()
+```
+
+
+```{r}
+#| label: age_by_variant
+#| fig-cap: "Възрастово разпределение по вариант и пол. Поради малкия брой на наблюдение, вариант алфа не е включен в анализа."
+#| warning: false
+#| echo: false
+#| cap-location: margin
+dat %>% 
+  filter(variant_type != "Alpha") %>% 
+  ggplot(aes(age,variant_type, fill = sex))+
+  geom_boxplot()+
+  ggthemes::geom_rangeframe() +
+  coord_cartesian(clip="off") +
+  geom_rug(alpha = 0.6,sides="b")+
+  theme(legend.position="none")+
+  scale_fill_nejm()+
+  labs(title = "Възрастово разпределение по вариант и пол",
+    subtitle = parse(text = variant_age$expression),
+    x = "Възраст",
+       y = " ")
+```
+
+## Пол
+
+По отношение на разпределнието на пола спрямо вариантите, също не се набюдава статистическа значима разлика. Сред изследваните мъжете преобладават сред пациентите с установен Омикрон n = 36 (51.4%). Жените са с по-висок относителен дял сред хоспитализираните с вариант Алфа (n =5 ; 62.5%) и вариант Делта (n =65 ; 58%).
+
+```{r}
+#| include: false
+
+results_data_sex = dat %>% 
+  contingency_table(
+  sex, code)
+```
+
+```{r}
+#| label: sex_by_variant
+#| fig-cap: "Полово разпределение по вариант. В синьо - относителния дял на мъжете, в червено - относителния дял на жените"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+dat %>% 
+  freq_table(code,sex) %>% 
+  select(code, sex , prop) %>% 
+  mutate(prop=prop/100) %>% 
+  ggplot(aes(prop,code, fill = sex))+
+  geom_col()+
+  geom_vline(xintercept = 0.5, size = 1.1, alpha = 0.8)+
+  scale_x_continuous(labels = scales::percent)+
+  ggthemes::geom_rangeframe() +
+  #coord_cartesian(clip="off") +
+  #geom_rug(alpha = 0.6,sides="b")+
+  theme(legend.position="none")+
+  scale_fill_nejm()+
+  labs(title = "Полово разпределение по вариант",
+    subtitle = parse(text = results_data_sex$expression),
+    x = " ",
+       y = " ")
+```
+
+## Леталитет
+
+Наблюдават се и различия по отношение на относителните дялове на починалите пациенти за всеки от вариантите. С установен вариант Delta, починали са 29 пациенти (29.6%), докато за ваирнт Omicron починали са 1,6 пъти по-малко n=18; (27.7%). 
+
+```{r}
+#| include: false
+c_table = dat %>% 
+    contingency_table(code,outocome) 
+```
+
+```{r}
+#| label: deaths_proportion
+#| fig-cap: "Относителен дял на смъртните случаи по вариантии "
+#| column: margin
+#| message: false
+#| echo: false
+
+dat %>% 
+  freq_table(code,outocome) %>% 
+  filter(outocome == "Починал") %>% 
+  select(code,prop) %>% 
+  mutate(prop=prop/100,
+         code = fct_reorder(code, prop)) %>% 
+  ggplot(aes(prop,code, fill = code))+
+  geom_col()+
+  theme(legend.position="none")+
+  scale_fill_nejm()+
+  scale_x_continuous(labels = scales::percent)+
+  labs(x = "% смъртни случай",
+       y = " ")
+```
+
+```{r}
+#| include: false
+results_days <- oneway_anova(
+  dat,
+  code,
+  days_hospital,
+  paired = FALSE,
+  type = "np"
+)
+
+```
+
+## Продължителност на хоспитализацията 
+
+В анализа на извадката от пациенти с изпратени проби се наблюдава и разлика по отношение на продължителността на хоспитализацията. При пациентите с ваирнт Alpha, медианата на болничния престой е  9 дни (IQR 6-12 ); при пациентите с вариант Делта 8 дни (IQR 2-14), докато при пациентите с вариант Omicron 7 дни (IQR 1-13). Високия болничен престой в комбинация с високата вариабилност, определя и високата клинична тежест на Делта варианта. 
+```{r}
+#| label: lengh_of_stay_by_variant
+#| fig-cap: "Продължителност на болничния престой според варианта"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+dat %>% 
+  ggplot(aes(days_hospital,code), fill = "gray")+
+  geom_boxplot()+
+  ggthemes::geom_rangeframe() +
+  coord_cartesian(clip="off") +
+  geom_rug(alpha = 0.6,sides="b")+
+  theme(legend.position="none")+
+  labs(title = "Продължителност на болничния престой според варианта",
+    subtitle = parse(text = results_days$expression),
+    x = "Продължителност на болничния престой",
+       y = " ")
+```
+
+## Време за настъпва на смърта
+
+Различия се наблюдават и във времетол до настъпване на смъртния изход. При вариант Делта медианата на времето до настъпването на смърт е 8 дни, спрямо 9,5 за вариант Омикрон. 
+
+```{r}
+#| include: false
+results_deaths <- 
+  dat %>% 
+  filter(variant_type != "Alpha", 
+         days_to_death < 100) %>% 
+  two_sample_test(
+  variant_type,
+  days_to_death,
+  paired = FALSE,
+  type = "np"
+)
+
+```
+
+```{r}
+#| label: deaths_days_by_variant
+#| fig-cap: "Време до настъпване на смърта при починалите според варианта"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+dat %>% 
+  filter(variant_type != "Alpha", 
+         days_to_death < 100) %>% 
+  ggplot(aes(days_to_death,variant_type), fill = "gray")+
+  geom_boxplot()+
+  ggthemes::geom_rangeframe() +
+  coord_cartesian(clip="off") +
+  geom_rug(alpha = 0.6,sides="b")+
+  theme(legend.position="none")+
+  labs(title = "Време до настъпване на смърта при починалите",
+    subtitle = parse(text = results_deaths$expression),
+    x = "Продължителност на болничния престой",
+       y = " ")
+```
+
+# Оценка на леталитета спрямо вирусния вариант
+
+За да се оцени ефектът на Вариантът спрямо болничния леталитет, се построй регресионен модел (поасон модел) включваща променливите пол, възраст и вариант. Като резултат от следмоделното сравнение, се установява разлика между Omicron / Delta вариантите върху относителния риск за смърт при хоспитализираните от 0,74. Това може да се тълкува и като увеличение на относителния риск за смърт с 1.35 пъти (или увеличение с 35%) при Делта вариантът спрямо омикрон, независимо от пола и възрастта. 
+
+По отношение на възрастта - сравнението е направено спрямо пациентите на възраст 40 г. (x - sd - минус 1 стандартно отклонение от средната възраст в извадката) и тези на 81 г. (x + sd - плюс 1 стандартно отклонение от средната възраст в извадката). Установява се, по-висок относителен риск за болнична смърт асоцииран с възратта, като по-възрастните са с 8.18 по-висок риск, независимо от варианта и пола. 
+
+За последния признак пол, резултатите са в синхрон с вече известни данни - рискът за болнична смърт се повишава с 1,33 пъти (или с 33%) при мъжете в сравнение с пациентите жени. 
+
+```{r}
+#| include: false
+calc_days<- function(day_1, day_2) {
+  require(lubridate)
+  period <- as.period(interval(day_1, day_2),
+                      unit = "day")
+  period$day
+} 
+```
+
+
+```{r}
+#| include: false
+dat_model= dat %>% 
+  mutate(pand_days = calc_days(as.Date("2021-07-04"),admit_day)) %>% 
+  filter(variant_type != "Alpha") %>% 
+mutate(gender = if_else(sex == "Мъж",1,0),
+       virus = if_else(variant_type == "Delta", 1, 0),
+       dth = if_else(outocome == "Починал",1,0) ) 
+fit <- glm(dth ~ age+factor(sex)+ variant_type, data=dat_model, family = quasipoisson)
+com = comparisons(fit,  transform_pre = "ratio",variables = list(sex = "pairwise",age = "2sd")) %>% tidy()
+
+```
+
+```{r}
+#| tbl-cap: "Сравнение на променливите в регресиония модел"
+#| tbl-colwidths: [70,30]
+#| cap-location: margin
+#| echo: false
+  comparisons(fit,  transform_pre = "ratio", variables = list(variant_type="pairwise" ,sex =   "pairwise",age = "2sd"))%>% 
+  tidy() %>% 
+  select(-c(term,type, statistic )) %>% 
+  round_df(2) %>% 
+  rename(`контраст` = contrast ,
+         `RR` = estimate, 
+         `SE` = std.error ,
+         `p` = p.value ,
+         `95%CI` = conf.low ,
+         `95%CI `= conf.high) %>% 
+  knitr::kable()
+```
+
+
+
+```{r}
+#| label: regr_plot
+#| fig-cap: "Разлика в шансът за смърт спрямо пола и възрастта"
+#| warning: false
+#| echo: false
+#| cap-location: margin
+plot_cco(
+    fit,
+    effect = "variant_type",
+    condition = c("age", "sex"))+
+  ggthemes::geom_rangeframe() +
+  coord_cartesian(clip="off") +
+  geom_rug(alpha = 0.6,sides="b")+
+  theme(legend.position="none")+
+  scale_colour_nejm()+
+  labs(title = "Разлика в шансът за смърт спрямо пола и възрастта",
+    x = "Възраст",
+       y = "Разлика в шансът за смъртен изход (Омикрон/Делта)")
+```
+
