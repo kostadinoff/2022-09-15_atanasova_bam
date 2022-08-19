@@ -12,6 +12,8 @@ format:
                  \usepackage[bulgarian]{babel}
     html: 
       self-contained: true
+execute:
+  cache: true
 reference-location: margin
 citation-location: margin
 ---
@@ -19,11 +21,11 @@ citation-location: margin
 ```{r}
 #| include: false
 #| warning: false
+here::i_am("2022-09-15_atanasova_bam/analysis/atanasova_analysis.qmd")
 library(ggthemes)
 library(tidyverse)
 library(lubridate)
 library(patchwork)
-library(rstudioapi)
 library(gtsummary)
 library(easystats)
 library(flextable)
@@ -40,16 +42,13 @@ library(viridis)
 library(emmeans)
 library(survival)
 library(survminer)
-library(here)
 library(marginaleffects)
 
 knitr::opts_chunk$set(dev = "cairo_pdf")
 
-setwd(dirname(rstudioapi::getSourceEditorContext()$path))
-
 ggplot2::theme_set(ggthemes::theme_tufte(base_size = 14, base_family = "Cormorant Infant", ticks =FALSE))
-dat = read_rds("data/dat.rds")
-dat_all = read_rds("data/all_patients.rds")
+dat = read_rds("../data/dat.rds")
+dat_all = read_rds("../data/all_patients.rds")
 
 round_df <- function(x, digits) {
   # round all numeric variables
