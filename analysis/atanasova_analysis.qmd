@@ -21,7 +21,17 @@ citation-location: margin
 ```{r}
 #| include: false
 #| warning: false
+library(here)
 here::i_am("2022-09-15_atanasova_bam/analysis/atanasova_analysis.qmd")
+WD <- getwd()
+if (!is.null(WD))
+setwd(WD)
+```
+
+```{r}
+#| include: false
+#| warning: false
+
 library(ggthemes)
 library(tidyverse)
 library(lubridate)
@@ -47,8 +57,10 @@ library(marginaleffects)
 knitr::opts_chunk$set(dev = "cairo_pdf")
 
 ggplot2::theme_set(ggthemes::theme_tufte(base_size = 14, base_family = "Cormorant Infant", ticks =FALSE))
-dat = read_rds("../data/dat.rds")
-dat_all = read_rds("../data/all_patients.rds")
+
+dat = read_rds(here::here("2022-09-15_atanasova_bam","data", "dat.rds"))
+dat_all = read_rds(here::here("2022-09-15_atanasova_bam","data", "all_patients.rds"))
+
 
 round_df <- function(x, digits) {
   # round all numeric variables
@@ -86,7 +98,7 @@ dat_all %>%
   pivot_wider(names_from = outocome, values_from = n) %>% 
   select(-`NA`) %>% 
   mutate(total = `За домашно лечение` + `Починал`,
-         across(where(is.numeric), ~replace(., is.na(.), 0))) %>% 
+         dplyr::across(where(is.numeric), ~replace(., is.na(.), 0))) %>% 
   rename(deaths = `Починал`) %>% 
   select(- `За домашно лечение`) %>%
 # хитра функция с групиране по седмици и месеци и нова колона от средните 
@@ -136,10 +148,6 @@ fill_dat = dat %>%
   select(my, Delta) %>% 
   mutate(Delta = replace_na(Delta,0)) %>% 
   rename(delta_prob = Delta) 
-  
-  
-  
-
 ```
 
 
