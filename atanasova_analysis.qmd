@@ -44,8 +44,8 @@ library(marginaleffects)
 
 knitr::opts_chunk$set(dev = "cairo_pdf")
 #setwd("~/MEGA/MEGAsync/2022-09-15_atanasova_bam")
-wd = here::here()
-setwd(wd)
+wd = 
+setwd(here::here())
 ggplot2::theme_set(ggthemes::theme_tufte(base_size = 14, base_family = "Cormorant Infant", ticks =FALSE))
 dat = read_rds("dat.rds")
 dat_all = read_rds("all_patients.rds")
