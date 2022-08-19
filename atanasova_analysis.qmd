@@ -23,6 +23,7 @@ library(ggthemes)
 library(tidyverse)
 library(lubridate)
 library(patchwork)
+library(rstudioapi)
 library(gtsummary)
 library(easystats)
 library(flextable)
@@ -43,9 +44,9 @@ library(here)
 library(marginaleffects)
 
 knitr::opts_chunk$set(dev = "cairo_pdf")
-#setwd("~/MEGA/MEGAsync/2022-09-15_atanasova_bam")
-wd = 
-setwd(here::here())
+
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+
 ggplot2::theme_set(ggthemes::theme_tufte(base_size = 14, base_family = "Cormorant Infant", ticks =FALSE))
 dat = read_rds("dat.rds")
 dat_all = read_rds("all_patients.rds")
