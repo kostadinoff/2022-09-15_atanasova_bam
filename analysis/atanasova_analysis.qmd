@@ -34,6 +34,7 @@ if (!is.null(WD))
 
 library(ggthemes)
 library(tidyverse)
+library(tidymodels)
 library(lubridate)
 library(patchwork)
 library(gtsummary)
@@ -43,10 +44,13 @@ library(scales)
 library(rstatix)
 library(sysfonts)
 library(tidyquant)
+library(broom)
 library(showtext)
 library(statsExpressions)
 library(ggridges)
 library(gt)
+library(janitor)
+library(furniture)
 library(ggsci)
 library(viridis)
 library(emmeans)
@@ -74,11 +78,18 @@ round_df <- function(x, digits) {
   x[numeric_columns] <-  round(x[numeric_columns], digits)
   x
 }
+```
+
+За периода 1.7.2021-9.5.2022г. в Лабораторията по Вирусология при УМБАЛ „Св. Георги“-Пловдив чрез RT-PCR (Bioneer) е установен SARS-CoV-2 при 3868 пациенти. На 5% от тях са изпратени проби в НЦЗПБ-София за определяне вирусния вариант чрез секвениране (Pangolin COVID-19 Lineage Assigner v4.0.6), който е уточнен при 190 проби.
+
+
+
+# Репрезентативност на извадката 
+
+```{r}
 
 ```
 
-За периода 1.7.2021-9.5.2022г. в Лабораторията по Вирусология при УМБАЛ „Св. Георги“-Пловдив чрез RT-PCR (Bioneer) е установен SARS-CoV-2 при 3868 пациенти. На 5% от тях са изпратени проби в НЦЗПБ-София за определяне вирусния вариант
-чрез секвениране (Pangolin COVID-19 Lineage Assigner v4.0.6), който е уточнен при 190 проби.
 
 # Динамика в периода на изследване
 ## Динамика в хоспитализацията и вътреболничния леталитет 
