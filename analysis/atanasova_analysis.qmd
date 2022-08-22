@@ -37,6 +37,7 @@ library(flextable)
 library(gtsummary)
 library(gt)
 library(furniture)
+library(finalfit)
 #ggplot extra
 library(ggthemes)
 library(showtext)
@@ -390,14 +391,57 @@ dat_all %>%
 
 ```{r}
 #| include: false
-dat_all = 
-  dat_all %>% mutate(death = as_factor(if_else(outocome == "Починал", 1, 0)))
-death_mod = glm(death ~ age + factor(sex), family = binomial(link = "logit"), data = dat_all)
+dat_all = dat_all %>%
+  mutate(
+    # Create categories
+    age_group = dplyr::case_when(
+      age <= 14            ~ "0-14",
+      age > 14 & age <= 44 ~ "15-44",
+      age > 44 & age <= 64 ~ "45-64",
+      age > 64             ~ "> 64"
+    ),
+    # Convert to factor
+    age_group = factor(age_group,
+                       level = c("0-14", "15-44", "45-64", "> 64"))
+  ) %>% 
+  mutate(death = as_factor(if_else(outocome == "Починал", 1, 0)))
+
+death_mod = glm(death ~ age + factor(sex),
+                family = binomial(link = "logit"),
+                data = dat_all)
 dat_all_mod = augment_columns(death_mod,
-                          dat_all,
-                          type.predict = "response") 
+                              dat_all,
+                              type.predict = "response")
+
+ 
 
 ```
+
+```{r}
+#| tbl-cap: "Разпределние на починалите по възрастови групи и пол"
+#| cap-location: margin
+#| label: tbl-death_age_sex
+#| echo: false
+#| warning: false
+dat_all %>% freq_table(outocome, sex, age_group) %>%
+  as_tibble() %>%
+  filter(outocome == "Починал") %>%
+  select(sex ,age_group,n,prop) %>% 
+  pivot_wider(names_from = sex, values_from = c(n,prop)) %>% 
+  rename(`Възрастова група` = age_group, 
+         `n Жени` = n_Жена,
+         `(%) Жени` = prop_Жена,
+         `n Мъже` = n_Мъж,
+         `(%) Мъже`= prop_Мъж) %>% 
+  select(`Възрастова група`,`n Жени`,`(%) Жени`, `n Мъже`, `(%) Мъже`) %>% 
+  mutate(`Жени n (%)` = str_c(`n Жени`, " (" ,`(%) Жени`, "%", ")"),
+         `Мъже n (%)` = str_c(`n Мъже`, " (" , `(%) Мъже`, "%",")")) %>% 
+  select(-c(`n Жени`,`(%) Жени`, `n Мъже`, `(%) Мъже`)) %>% 
+  gt() %>% 
+  cols_align(align = "center")
+
+```
+
 
 ```{r}
 #| label: case_fatality by sex and age
@@ -425,7 +469,6 @@ dat_all_mod  %>%
   labs(title = "Леталитет спрямо възрастта и пола",
        x = "Възраст",
        y = "Вътреболничен леталитет")
-  
 ```
 
 
