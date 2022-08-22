@@ -423,22 +423,18 @@ dat_all_mod = augment_columns(death_mod,
 #| label: tbl-death_age_sex
 #| echo: false
 #| warning: false
-dat_all %>% freq_table(outocome, sex, age_group) %>%
-  as_tibble() %>%
-  filter(outocome == "Починал") %>%
-  select(sex ,age_group,n,prop) %>% 
-  pivot_wider(names_from = sex, values_from = c(n,prop)) %>% 
-  rename(`Възрастова група` = age_group, 
-         `n Жени` = n_Жена,
-         `(%) Жени` = prop_Жена,
-         `n Мъже` = n_Мъж,
-         `(%) Мъже`= prop_Мъж) %>% 
-  select(`Възрастова група`,`n Жени`,`(%) Жени`, `n Мъже`, `(%) Мъже`) %>% 
-  mutate(`Жени n (%)` = str_c(`n Жени`, " (" ,`(%) Жени`, "%", ")"),
-         `Мъже n (%)` = str_c(`n Мъже`, " (" , `(%) Мъже`, "%",")")) %>% 
-  select(-c(`n Жени`,`(%) Жени`, `n Мъже`, `(%) Мъже`)) %>% 
-  gt() %>% 
-  cols_align(align = "center")
+dat_all %>%
+  group_by(age_group, sex, outocome) %>%
+  summarise(n = n()) %>%
+  pivot_wider(names_from = outocome,
+              values_from = n) %>%
+  select(-`NA`) %>%
+  mutate(case_fatality = percent(Починал / (`За домашно лечение` + Починал))) %>%
+  select(age_group, sex, case_fatality) %>%
+  rename(`Възрастова група` = age_group,
+         `Пол` = sex,
+         `Леталитет` = case_fatality) %>%
+ knitr::kable()
 
 ```
 
