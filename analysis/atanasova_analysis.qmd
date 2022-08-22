@@ -13,7 +13,7 @@ format:
     html: 
       self-contained: true
 execute:
-  cache: true
+  cache: false
 reference-location: margin
 citation-location: margin
 ---
@@ -70,7 +70,7 @@ font_add(family = "Cormorant Infant", regular = "Cormorantinfant-regular.ttf")
 showtext_auto()
 ggplot2::theme_set(
   ggthemes::theme_tufte(
-    base_size = 13,
+    base_size = 14,
     base_family = "Cormorant Infant",
     ticks = FALSE))
 ```
@@ -119,8 +119,8 @@ round_df <- function(x, digits) {
 #| warning: false
 #| echo: false
 #| column: page-right
-#| fig-width: 10
-#| fig-height: 3
+#| fig-width: 7
+#| fig-height: 4
 
 # скалиращ фактор за наличие на две у оси
 scaleFactor <- 25 / 76.47059
@@ -143,7 +143,7 @@ dat_all %>%
   geom_line(
     aes(y = total, group = 1),
     alpha = 0.3,
-    size = 0.3,
+    size = 0.1,
     lty = 2,
     color = "black"
   ) +
@@ -152,21 +152,21 @@ dat_all %>%
     ma_fun = SMA,
     n = 14,
     alpha = 1,
-    size = 0.8,
+    size = 0.6,
     lty = 1,
     color = "black"
   ) +
   geom_point(
     aes(y = total, group = 1),
-    alpha = 0.3,
-    size = 0.4,
+    alpha = 0.2,
+    size = 0.2,
     color = "black"
   ) +
   # За Починали
   geom_line(
     aes(y = deaths, group = 1),
-    size = 0.3,
     alpha = 0.3,
+    size = 0.1,
     colour = "red",
     lty = 2
   ) +
@@ -174,15 +174,15 @@ dat_all %>%
     aes(y = deaths, group = 1),
     ma_fun = SMA,
     n = 14,
-    size = 0.8,
     alpha = 1,
+    size = 0.6,
     colour = "red",
     lty = 1
   ) +
   geom_point(
     aes(y = deaths, group = 1),
-    alpha = 0.3,
-    size = 0.3,
+    alpha = 0.2,
+    size = 0.2,
     colour = "red"
   ) +
   # За Леталитета
@@ -191,7 +191,7 @@ dat_all %>%
     se = F,
     colour = "blue",
     lty = 2,
-    size = 1
+    size = 0.8
   ) +
   # За двете оси
   scale_y_continuous(name = "Брой (n)",
@@ -209,7 +209,7 @@ dat_all %>%
            size = 0.3 ,
            sides = "b") +
   scale_x_date(date_labels = "%b %y", date_breaks  = "1 month") +
-  labs(title = "Динамика в броя хоспитализациите,\nсмъртните случаи и леталитета",
+  labs(title = "Динамика в броя хоспитализациите, \nсмъртните случаи и леталитета",
        x = "")
 ```
 
