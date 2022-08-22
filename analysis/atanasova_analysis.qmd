@@ -39,6 +39,7 @@ library(gt)
 library(gt)
 #ggplot extra
 library(ggthemes)
+library(showtext)
 library(patchwork)
 library(scales)
 library(sysfonts)
@@ -65,17 +66,25 @@ library(survminer)
 #| include: false
 #| warning: false
 knitr::opts_chunk$set(dev = "cairo_pdf")
-
+font_add(family = "Cormorant Infant", regular = "Cormorantinfant-regular.ttf")
+showtext_auto()
 ggplot2::theme_set(
   ggthemes::theme_tufte(
     base_size = 13,
     base_family = "Cormorant Infant",
     ticks = FALSE))
+```
 
+```{r}
+#| include: false
+#| warning: false
 dat = read_rds(here::here("2022-09-15_atanasova_bam", "data", "dat.rds"))
 dat_all = read_rds(here::here("2022-09-15_atanasova_bam", "data", "all_patients.rds"))
+```
 
-
+```{r}
+#| include: false
+#| warning: false
 round_df <- function(x, digits) {
   # round all numeric variables
   # x: data frame
@@ -110,6 +119,8 @@ round_df <- function(x, digits) {
 #| warning: false
 #| echo: false
 #| column: page-right
+#| fig-width: 10
+#| fig-height: 3
 
 # скалиращ фактор за наличие на две у оси
 scaleFactor <- 25 / 76.47059
