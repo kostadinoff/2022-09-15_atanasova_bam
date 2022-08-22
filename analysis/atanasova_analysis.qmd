@@ -36,7 +36,7 @@ if (!is.null(WD))
 library(flextable)
 library(gtsummary)
 library(gt)
-library(gt)
+library(furniture)
 #ggplot extra
 library(ggthemes)
 library(showtext)
@@ -80,6 +80,7 @@ ggplot2::theme_set(
 #| warning: false
 dat = read_rds(here::here("2022-09-15_atanasova_bam", "data", "dat.rds"))
 dat_all = read_rds(here::here("2022-09-15_atanasova_bam", "data", "all_patients.rds"))
+dat_gr = read_rds(here::here("2022-09-15_atanasova_bam", "data", "dat_gr.rds"))
 ```
 
 ```{r}
@@ -102,7 +103,37 @@ round_df <- function(x, digits) {
 # Репрезентативност на извадката 
 
 ```{r}
-
+#| tbl-cap: "Репрезентативност на извадката - сравнение между пациентите със секвенирани проби и всички останали преминали пациенти за периода"
+#| cap-location: margin
+#| label: tbl-representiv
+#| echo: false
+#| warning: false
+dat_gr %>%
+  mutate(`Изход` = as_factor(if_else(
+    outocome == "Починал", "Починал", "Възстановен"
+  )),
+  days_hospital = as.numeric(days_hospital)) %>%
+  group_by(sample) %>%
+  table1(
+    sex,
+    `Изход`,
+    age,
+    days_hospital,
+    days_to_death,
+    na.rm = FALSE,
+    test = TRUE,
+    type = c("simple", "condensed"),
+    second = c("age","days_hospital", "days_to_death")
+  ) %>%
+  as_tibble() %>%
+  mutate(" " = c("Характеристика", "Пол: Мъж", "Изход: Починал","Възраст \n[Median (IQR)]", "Хоспитализация \n[Median (IQR)]", "Дни до смърта \n[Median (IQR)]" )) %>% 
+  select(` `,all_patients, sample, P.Value) %>% 
+  rename(
+    "Хоспитализирани" =  "all_patients",
+    "Секвенирани" = "sample",
+    "p" =  P.Value
+  ) %>%
+knitr::kable()
 ```
 
 
