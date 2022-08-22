@@ -32,32 +32,38 @@ if (!is.null(WD))
 #| include: false
 #| warning: false
 
-library(ggthemes)
-library(tidyverse)
-library(tidymodels)
-library(lubridate)
-library(patchwork)
-library(gtsummary)
-library(easystats)
+#tables
 library(flextable)
+library(gtsummary)
+library(gt)
+library(gt)
+#ggplot extra
+library(ggthemes)
+library(patchwork)
 library(scales)
-library(rstatix)
 library(sysfonts)
+library(ggsci)
+library(ggridges)
+#stats 
+library(tidymodels)
+library(marginaleffects)
+library(rstatix)
+library(statsExpressions)
+library(tidyverse)
+library(lubridate)
+library(easystats)
 library(tidyquant)
 library(broom)
 library(showtext)
-library(statsExpressions)
-library(ggridges)
-library(gt)
 library(janitor)
-library(furniture)
-library(ggsci)
-library(viridis)
 library(emmeans)
 library(survival)
 library(survminer)
-library(marginaleffects)
+```
 
+```{r}
+#| include: false
+#| warning: false
 knitr::opts_chunk$set(dev = "cairo_pdf")
 
 ggplot2::theme_set(
@@ -178,7 +184,7 @@ dat_all %>%
   ) +
   # За двете оси
   scale_y_continuous(name = "Брой (n)",
-                     sec.axis = sec_axis( ~ . / scaleFactor, name = "Леталитет (%)")) +
+                     sec.axis = sec_axis(~ . / scaleFactor, name = "Леталитет (%)")) +
   theme(axis.text.x = element_text(
     angle = 90,
     vjust = 0.5,
