@@ -701,7 +701,7 @@ model_ipw <- glm(
 #| warning: false
 #| echo: false
 #| fig-width: 4
-#| fig-height: 4
+#| fig-height: 6
 delta_ipw_2 = delta_ipw %>% 
   select(-c(`.se.fit`, `.resid`, `.hat`, `.sigma`, `.cooksd`,`.std.resid`))
 
