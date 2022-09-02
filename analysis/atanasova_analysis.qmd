@@ -143,7 +143,7 @@ dat_gr %>%
     "Секвенирани" = "sample",
     "p" =  P.Value
   ) %>%
-knitr::kable()
+gt()
 ```
 
 # Динамика в периода на изследване
@@ -189,47 +189,47 @@ dat_all %>%
   # За Хоспитализирани
   geom_line(
     aes(y = total, group = 1),
-    alpha = 0.3,
+    alpha = 0.8,
     size = 0.1,
     lty = 2,
     color = "black"
   ) +
-  geom_ma(
-    aes(y = total, group = 1),
-    ma_fun = SMA,
-    n = 14,
-    alpha = 1,
-    size = 0.6,
-    lty = 1,
-    color = "black"
-  ) +
+  #geom_ma(
+  #  aes(y = total, group = 1),
+  #  ma_fun = SMA,
+  #  n = 14,
+  #  alpha = 1,
+  #  size = 0.6,
+  #  lty = 1,
+  #  color = "black"
+  #) +
   geom_point(
     aes(y = total, group = 1),
-    alpha = 0.2,
+    alpha = 0.4,
     size = 0.2,
     color = "black"
   ) +
   # За Починали
   geom_line(
     aes(y = deaths, group = 1),
-    alpha = 0.3,
-    size = 0.1,
+    alpha = 1,
+    size = 0.3,
     colour = "red",
     lty = 2
   ) +
-  geom_ma(
-    aes(y = deaths, group = 1),
-    ma_fun = SMA,
-    n = 14,
-    alpha = 1,
-    size = 0.6,
-    colour = "red",
-    lty = 1
-  ) +
+  #geom_ma(
+  #  aes(y = deaths, group = 1),
+  #  ma_fun = SMA,
+   # n = 14,
+   # alpha = 1,
+   # size = 0.6,
+   # colour = "red",
+  #  lty = 1
+  #) +
   geom_point(
     aes(y = deaths, group = 1),
-    alpha = 0.2,
-    size = 0.2,
+    alpha = 0.8,
+    size = 0.3,
     colour = "red"
   ) +
   # За Леталитета
@@ -240,6 +240,10 @@ dat_all %>%
     lty = 2,
     size = 0.8
   ) +
+  geom_vline(aes(xintercept = as.Date('2021-11-03'))) +
+  geom_vline(aes(xintercept = as.Date('2021-11-11')), color = "red") +
+  geom_vline(aes(xintercept = as.Date('2022-03-01'))) +
+  geom_vline(aes(xintercept = as.Date('2022-02-01')), color = "red") +
   # За двете оси
   scale_y_continuous(name = "Брой (n)",
                      sec.axis = sec_axis(~ . / scaleFactor, name = "Леталитет (%)")) +
