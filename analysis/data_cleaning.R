@@ -154,6 +154,20 @@ dat_all$wmy <-
 write_rds(dat_all,
           here::here("2022-09-15_atanasova_bam", "data", "all_patients.rds"))
 
+write_csv(dat_all,
+          here::here("2022-09-15_atanasova_bam", "data", "all_patients.csv"))
+
+
+
+# по дни
+
+dat_all %>% 
+  count(admit_day, outocome) %>% 
+  group_by(admit_day, outocome, name = "numb") %>% 
+  summarise(n = sum(numb))
+
+
+
 ## Синхронизирани секвенирани пациенти
 dat = sec_dat %>%
   left_join(select(dat_all,-c(birth_date, sex)))

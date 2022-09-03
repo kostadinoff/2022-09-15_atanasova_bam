@@ -190,7 +190,7 @@ dat_all %>%
   geom_line(
     aes(y = total, group = 1),
     alpha = 0.8,
-    size = 0.1,
+    size = 0.6,
     lty = 2,
     color = "black"
   ) +
@@ -213,17 +213,17 @@ dat_all %>%
   geom_line(
     aes(y = deaths, group = 1),
     alpha = 1,
-    size = 0.3,
-    colour = "red",
-    lty = 2
+    size = 0.9,
+    colour = "#FF5733",
+    lty = 1
   ) +
   #geom_ma(
   #  aes(y = deaths, group = 1),
   #  ma_fun = SMA,
-   # n = 14,
-   # alpha = 1,
-   # size = 0.6,
-   # colour = "red",
+  # n = 14,
+  # alpha = 1,
+  # size = 0.6,
+  # colour = "red",
   #  lty = 1
   #) +
   geom_point(
@@ -239,14 +239,14 @@ dat_all %>%
     colour = "blue",
     lty = 2,
     size = 0.8
-  ) +
-  geom_vline(aes(xintercept = as.Date('2021-11-03'))) +
-  geom_vline(aes(xintercept = as.Date('2021-11-11')), color = "red") +
-  geom_vline(aes(xintercept = as.Date('2022-03-01'))) +
-  geom_vline(aes(xintercept = as.Date('2022-02-01')), color = "red") +
+  ) +	
+  geom_vline(aes(xintercept = as.Date('2021-11-09')),size = 0.8, color = "black") +
+  geom_vline(aes(xintercept = as.Date('2021-10-31')),size = 0.8, color = "red") +
+  geom_vline(aes(xintercept = as.Date('2022-02-03')),size = 0.8, color = "black") +
+  geom_vline(aes(xintercept = as.Date('2022-02-01')),size = 0.8, color = "red") +
   # За двете оси
   scale_y_continuous(name = "Брой (n)",
-                     sec.axis = sec_axis(~ . / scaleFactor, name = "Леталитет (%)")) +
+                     sec.axis = sec_axis( ~ . / scaleFactor, name = "Леталитет (%)")) +
   theme(axis.text.x = element_text(
     angle = 90,
     vjust = 0.5,
@@ -358,6 +358,16 @@ dat_all %>%
     size = 0.8,
     alpha = 1.1
   ) +
+  geom_text(
+    aes(label = scales::percent(case_fatality)),
+    #position = position_dodge(width = .9),
+    # move to center of bars
+    hjust = 0,
+    vjust = 0.5,
+    # nudge above top of bar
+    size = 4,
+    family="Cormorant Infant"
+  ) +
   scale_x_continuous(labels = scales::percent) +
   
   #ggthemes::geom_rangeframe() +
@@ -369,7 +379,8 @@ dat_all %>%
     y = "",
     fill = "% Делта вариант"
   ) +
-  theme(plot.subtitle = element_text(size = 12))
+  theme(legend.position = "bottom")+
+  theme(plot.subtitle = element_text(size = 14))
 
 ```
 
@@ -613,10 +624,10 @@ dat_all = dat_all %>%
 dat_all %>%
   mutate("Пол - Мъже" = if_else(sex == "Мъж", 1,0),
          "Леталитет" = if_else(outocome == "Починал",1,0)) %>% 
-  select(age, days_hospital, "Пол - Мъже" ,days_to_death, variant_dominant,"Леталитет") %>%
+  select(age,"Пол - Мъже", days_hospital,days_to_death, variant_dominant,"Леталитет") %>%
   tbl_summary(by = variant_dominant,
               label = list(age~ "Възраст",
-                           days_hospital ~ "Хоспитализация",
+                           days_hospital ~ "Продължителност на хоспитализацията",
                            days_to_death ~ "Време (дни) до смърт"),
               missing = "no") %>% 
   add_p() %>% 
@@ -653,8 +664,9 @@ delta_probabilities <- augment_columns(death_step,
 delta_ipw <- delta_probabilities %>%
   mutate(ipw = (death / propensity) + ((1 - death) / (1 - propensity)))
 
-model_ipw <- glm(
-  death ~ factor(variant_dominant) + age + factor(sex),
+model_ipw <- 
+  glm(
+  death ~ factor(variant_dominant, levels = c("Omicron","Delta" ))+ age + factor(sex),
   data = delta_ipw,
   family=quasipoisson,
   weights = ipw
@@ -692,7 +704,8 @@ model_ipw <- glm(
          "p" = p.value) %>% 
   round_df(3) %>% 
   mutate(p = "< 0.001") %>% 
-  mutate("Променлива" = c("Омикрон", "Възраст", "Мъжки пол" )) %>% 
+  mutate("Променлива" = c("Делта вариант", "Възраст", "Мъжки пол" )) %>% 
+  gt()
   knitr::kable()
 ```
 
@@ -722,7 +735,7 @@ rename(predicted = .fitted) %>%
   coord_cartesian(clip = "off") +
   geom_rug(aes(x = age), alpha = 0.2, size = 0.4) +
   scale_y_continuous(labels = scales::percent) +
-  facet_wrap(sex~variant_dominant)+
+  facet_grid(variant_dominant~sex)+
   theme(legend.position = "none")+
   labs(title = "Леталитет спрямо ",
        subtitle = "доминиращия вариант",
