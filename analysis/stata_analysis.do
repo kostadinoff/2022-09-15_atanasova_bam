@@ -43,19 +43,8 @@ contrast gw.c_variant, effects nowald
 
 margins c_variant, over(gender) at(age=(5(5)95))
 
-**# Графика с две оси - хоспитализирани и починали #1
-* Импортиране на данните по дни
 
 
-import delimited "C:\Users\PC\Documents\GitHub\2022-09-15_atanasova_bam\2022-09-15_atanasova_bam\data\all_patients_by_date.csv", numericcols(12) clear 
-
-gen admt_day =date( admit_day ,"YMD")
-drop admit_day
-
-format admt_day %td
-tsset admt_day
-
-graph twoway (tsline deaths , yaxis(1)) (tsline total ,yaxis(2)) 
 
 
 
